@@ -1,0 +1,1 @@
+# AzureVM_Autoshutdown
