@@ -185,7 +185,7 @@ if ($existingSched) {
         -Name                  $scheduleName `
         -StartTime             $startTime `
         -DayInterval           1 `
-        -TimeZone              "UTC" `
+        -TimeZone              "Central European Standard Time" `
         -ErrorAction Stop | Out-Null
     Write-Success "Schedule created: daily at $ScheduleTime UTC"
     Write-Info "First run: $startTime UTC"
