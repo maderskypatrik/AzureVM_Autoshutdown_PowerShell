@@ -6,14 +6,14 @@
     - Uploads  ../runbook/Invoke-AutoShutdown.ps1  to the Automation Account
     - Sets the runbook runtime to PowerShell 7.2
     - Publishes the runbook
-    - Creates a daily schedule at the configured time (default: 19:00 UTC)
+    - Creates a daily schedule at the configured time (default: 19:00 CET)
     - Links the schedule to the runbook with WhatIf=$true for the first run
 
     After confirming the first WhatIf run looks correct, you can update the
     schedule link to WhatIf=$false using the -DisableWhatIf switch.
 
 .PARAMETER ScheduleTime
-    Time of day for the daily shutdown trigger (UTC).
+    Time of day for the daily shutdown trigger in CET (DST-aware — enter your local CET/CEST time).
     Format: "HH:mm"   Default: "19:00"
 
 .PARAMETER RunbookPath
@@ -157,7 +157,7 @@ Publish-AzAutomationRunbook `
 Write-Success "Runbook published (Runtime: PowerShell 7.2)"
 
 # -- Create/update schedule ----------------------------------------------------
-Write-Step "Setting up daily schedule at $ScheduleTime UTC..."
+Write-Step "Setting up daily schedule at $ScheduleTime CET..."
 
 $scheduleName = "sched-autoshutdown-daily"
 
@@ -166,8 +166,13 @@ $timeParts = $ScheduleTime -split ":"
 $schedHour = [int]$timeParts[0]
 $schedMin  = [int]$timeParts[1]
 
-# First run = tomorrow at the specified time
-$startTime = (Get-Date).ToUniversalTime().Date.AddDays(1).AddHours($schedHour).AddMinutes($schedMin)
+# Calculate first run = tomorrow at the specified time in CET (DST-aware)
+# This correctly handles both CET (UTC+1) and CEST (UTC+2)
+$tz         = [System.TimeZoneInfo]::FindSystemTimeZoneById("Central European Standard Time")
+$nowCET     = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $tz)
+$startLocal = $nowCET.Date.AddDays(1).AddHours($schedHour).AddMinutes($schedMin)
+$offset     = $tz.GetUtcOffset($startLocal)
+$startTime  = [System.DateTimeOffset]::new($startLocal, $offset)
 
 $existingSched = Get-AzAutomationSchedule `
     -ResourceGroupName     $ResourceGroupName `
@@ -187,8 +192,8 @@ if ($existingSched) {
         -DayInterval           1 `
         -TimeZone              "Central European Standard Time" `
         -ErrorAction Stop | Out-Null
-    Write-Success "Schedule created: daily at $ScheduleTime UTC"
-    Write-Info "First run: $startTime UTC"
+    Write-Success "Schedule created: daily at $ScheduleTime CET"
+    Write-Info "First run: $startTime (CET/CEST local)"
 }
 
 # -- Link schedule to runbook --------------------------------------------------
@@ -316,7 +321,7 @@ Invoke-AcceptanceCriteria -StoryId "US-04,US-08" -CriteriaNames @(
 Write-Banner "Done"
 Write-Host ""
 Write-Host "  Runbook      : $runbookName (Published, PowerShell 7.2)" -ForegroundColor White
-Write-Host "  Schedule     : $scheduleName - daily at $ScheduleTime UTC" -ForegroundColor White
+Write-Host "  Schedule     : $scheduleName - daily at $ScheduleTime CET" -ForegroundColor White
 Write-Host "  WhatIf mode  : $whatIfValue"  -ForegroundColor $(if ($whatIfValue) { "Yellow" } else { "Green" })
 Write-Host ""
 
@@ -326,6 +331,6 @@ if ($whatIfValue) {
     Write-Host "    .\New-Runbook.ps1 -DisableWhatIf" -ForegroundColor White
 } else {
     Write-Host "  Live shutdowns are now active. VMs tagged 'shutdown' will be" -ForegroundColor Green
-    Write-Host "  stopped daily at $ScheduleTime UTC." -ForegroundColor Green
+    Write-Host "  stopped daily at $ScheduleTime CET." -ForegroundColor Green
 }
 Write-Host ""

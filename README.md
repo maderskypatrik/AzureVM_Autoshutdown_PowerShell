@@ -16,8 +16,8 @@ The solution runs entirely inside Azure Automation. A System-assigned Managed Id
 | System-assigned MI | Managed Identity | Authenticates runbooks to Azure â€” no passwords |
 | `Invoke-AutoShutdown.ps1` | PowerShell 7.2 Runbook | Stops VMs tagged with `shutdown` |
 | `Invoke-AutoStartup.ps1` | PowerShell 7.2 Runbook | Starts VMs tagged with `startup` |
-| `sched-autoshutdown-daily` | Automation Schedule | Daily shutdown trigger (default 19:00 UTC) |
-| `sched-autostartup-daily` | Automation Schedule | Daily startup trigger (default 07:00 UTC) |
+| `sched-autoshutdown-daily` | Automation Schedule | Daily shutdown trigger (default 19:00 CET, DST-aware) |
+| `sched-autostartup-daily` | Automation Schedule | Daily startup trigger (default 07:00 CET, DST-aware) |
 | `Az.Accounts` / `Az.Compute` / `Az.ResourceGraph` | PS Modules | Required Az cmdlets imported into the account |
 
 ---
@@ -80,8 +80,8 @@ This runs all 6 steps and sets up both runbooks. Both start in **WhatIf mode** â
 | 2 | `Set-ManagedIdentity.ps1` | Enables System-assigned Managed Identity, saves Object ID |
 | 3 | `Set-RBACRoles.ps1` | Assigns VM Contributor + Reader at subscription scope |
 | 4 | `Import-Modules.ps1` | Imports Az.Accounts, Az.Compute, Az.ResourceGraph |
-| 5 | `New-Runbook.ps1` | Uploads shutdown runbook (PS 7.2), creates daily schedule (default 19:00 UTC) |
-| 6 | `New-StartupRunbook.ps1` | Uploads startup runbook (PS 7.2), creates daily schedule (default 07:00 UTC) |
+| 5 | `New-Runbook.ps1` | Uploads shutdown runbook (PS 7.2), creates daily schedule (default 19:00 CET) |
+| 6 | `New-StartupRunbook.ps1` | Uploads startup runbook (PS 7.2), creates daily schedule (default 07:00 CET) |
 
 ### Enable live mode after validating WhatIf output
 

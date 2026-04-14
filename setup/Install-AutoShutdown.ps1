@@ -26,10 +26,10 @@
     Optional. If you know your Automation Account name, pass it to skip the picker.
 
 .PARAMETER ScheduleTime
-    Daily shutdown time in UTC. Default: "19:00"
+    Daily shutdown time in CET (DST-aware — enter your local CET/CEST time). Default: "19:00"
 
 .PARAMETER StartupScheduleTime
-    Daily startup time in UTC. Default: "07:00"
+    Daily startup time in CET (DST-aware — enter your local CET/CEST time). Default: "07:00"
 
 .PARAMETER SubscriptionIds
     Comma-separated list of subscription IDs for the runbook to process.
@@ -180,8 +180,8 @@ Write-Host "  Subscription       : $($state.SubscriptionName)"        -Foregroun
 Write-Host "  Resource Group     : $($state.ResourceGroupName)"       -ForegroundColor White
 Write-Host "  Automation Account : $($state.AutomationAccountName)"   -ForegroundColor White
 Write-Host "  Managed Identity   : $($state.ManagedIdentityObjectId)" -ForegroundColor White
-Write-Host "  Shutdown schedule  : Daily at $ScheduleTime UTC"        -ForegroundColor White
-Write-Host "  Startup schedule   : Daily at $StartupScheduleTime UTC" -ForegroundColor White
+Write-Host "  Shutdown schedule  : Daily at $ScheduleTime CET"        -ForegroundColor White
+Write-Host "  Startup schedule   : Daily at $StartupScheduleTime CET" -ForegroundColor White
 Write-Host "  WhatIf mode        : ON - no VMs will be started or stopped yet" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  What to do next:" -ForegroundColor Cyan
