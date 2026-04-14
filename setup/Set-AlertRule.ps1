@@ -1,17 +1,17 @@
 ﻿<#
 .SYNOPSIS
-    US-10 | Creates an Azure Monitor Alert Rule for Autoshutdown job failures.
+    Creates Azure Monitor Alert Rules for Autoshutdown and Autostartup job failures.
 
 .DESCRIPTION
     Creates:
-      - An Action Group that sends email to the PowerCloud team
+      - One Action Group that sends email on any failure
       - An Alert Rule that fires when Invoke-AutoShutdown job status is Failed
+      - An Alert Rule that fires when Invoke-AutoStartup job status is Failed
 
     Reads config from .autoshutdown-state.json automatically.
 
 .PARAMETER AlertEmail
     Email address to receive failure alerts.
-    Default: cloud@powerco.de
 
 .PARAMETER AlertEmailName
     Display name for the email recipient.
@@ -41,7 +41,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-Write-Banner "US-10 | Create Azure Monitor Alert Rule"
+Write-Banner "Create Azure Monitor Alert Rules"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Monitor")
@@ -197,10 +197,73 @@ if ($existingAlert) {
     Write-Info "Severity  : 2 (Warning)"
 }
 
+# -- Alert Rule (Startup) ------------------------------------------------------
+Write-Step "Creating Alert Rule for Invoke-AutoStartup..."
+
+$startupAlertRuleName = "alert-autostartup-failure"
+
+$existingStartupAlert = Get-AzMetricAlertRuleV2 `
+    -ResourceGroupName $ResourceGroupName `
+    -Name              $startupAlertRuleName `
+    -ErrorAction SilentlyContinue
+
+if ($existingStartupAlert) {
+    Write-Success "Startup Alert Rule already exists - skipping creation."
+} else {
+    $startupAlertPath = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName" +
+                        "/providers/microsoft.insights/metricAlerts/$startupAlertRuleName" +
+                        "?api-version=2018-03-01"
+
+    $startupAlertBody = @{
+        location   = "global"
+        properties = @{
+            description         = "Fires when Invoke-AutoStartup job fails"
+            severity            = 2
+            enabled             = $true
+            scopes              = @($aaResourceId)
+            evaluationFrequency = "PT5M"
+            windowSize          = "PT5M"
+            criteria            = @{
+                "odata.type" = "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+                allOf        = @(
+                    @{
+                        criterionType   = "StaticThresholdCriterion"
+                        name            = "Failed jobs"
+                        metricName      = "TotalJob"
+                        metricNamespace = "Microsoft.Automation/automationAccounts"
+                        operator        = "GreaterThan"
+                        threshold       = 0
+                        timeAggregation = "Total"
+                        dimensions      = @(
+                            @{ name = "Status";  operator = "Include"; values = @("Failed") }
+                            @{ name = "Runbook"; operator = "Include"; values = @("Invoke-AutoStartup") }
+                        )
+                    }
+                )
+            }
+            actions = @(
+                @{ actionGroupId = $actionGroupId }
+            )
+        }
+    } | ConvertTo-Json -Depth 10
+
+    $startupAlertResponse = Invoke-AzRestMethod -Path $startupAlertPath -Method PUT -Payload $startupAlertBody -ErrorAction Stop
+
+    if ($startupAlertResponse.StatusCode -notin @(200, 201)) {
+        throw "Failed to create Startup Alert Rule. HTTP $($startupAlertResponse.StatusCode): $($startupAlertResponse.Content)"
+    }
+
+    Write-Success "Alert Rule created: $startupAlertRuleName"
+    Write-Info "Fires when: Invoke-AutoStartup job status = Failed"
+    Write-Info "Window    : 5 minutes"
+    Write-Info "Severity  : 2 (Warning)"
+}
+
 # -- Acceptance criteria -------------------------------------------------------
-Invoke-AcceptanceCriteria -StoryId "US-10" -CriteriaNames @(
+Invoke-AcceptanceCriteria -StoryId "AlertRules" -CriteriaNames @(
     "Action Group exists and targets the correct email"
-    "Alert Rule exists targeting the Automation Account"
+    "Shutdown Alert Rule exists targeting the Automation Account"
+    "Startup Alert Rule exists targeting the Automation Account"
 ) -Criteria @(
     {
         $null -ne (Get-AzActionGroup `
@@ -208,9 +271,15 @@ Invoke-AcceptanceCriteria -StoryId "US-10" -CriteriaNames @(
             -Name $actionGroupName -ErrorAction SilentlyContinue)
     }
     {
-        # Verify via REST since Get-AzMetricAlertRuleV2 may not be available
         $checkPath = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName" +
                      "/providers/microsoft.insights/metricAlerts/$alertRuleName" +
+                     "?api-version=2018-03-01"
+        $checkResp = Invoke-AzRestMethod -Path $checkPath -Method GET -ErrorAction SilentlyContinue
+        $checkResp.StatusCode -eq 200
+    }
+    {
+        $checkPath = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName" +
+                     "/providers/microsoft.insights/metricAlerts/$startupAlertRuleName" +
                      "?api-version=2018-03-01"
         $checkResp = Invoke-AzRestMethod -Path $checkPath -Method GET -ErrorAction SilentlyContinue
         $checkResp.StatusCode -eq 200
@@ -220,10 +289,12 @@ Invoke-AcceptanceCriteria -StoryId "US-10" -CriteriaNames @(
 # -- Summary -------------------------------------------------------------------
 Write-Banner "Done"
 Write-Host ""
-Write-Host "  Action Group  : $actionGroupName" -ForegroundColor White
-Write-Host "  Alert Rule    : $alertRuleName"   -ForegroundColor White
-Write-Host "  Notifies      : $AlertEmail"       -ForegroundColor White
+Write-Host "  Action Group       : $actionGroupName"      -ForegroundColor White
+Write-Host "  Shutdown Alert     : $alertRuleName"        -ForegroundColor White
+Write-Host "  Startup Alert      : $startupAlertRuleName" -ForegroundColor White
+Write-Host "  Notifies           : $AlertEmail"           -ForegroundColor White
 Write-Host ""
-Write-Host "  The PowerCloud team will receive an email within 5 minutes" -ForegroundColor Gray
-Write-Host "  of any failed Invoke-AutoShutdown job." -ForegroundColor Gray
+Write-Host "  An email will be sent within 5 minutes of any failed job:" -ForegroundColor Gray
+Write-Host "    - Invoke-AutoShutdown failure" -ForegroundColor Gray
+Write-Host "    - Invoke-AutoStartup failure"  -ForegroundColor Gray
 Write-Host ""

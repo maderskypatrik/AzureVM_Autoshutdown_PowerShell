@@ -9,7 +9,9 @@
       Step 2 - Set-ManagedIdentity.ps1         Enable Managed Identity + capture Object ID
       Step 3 - Set-RBACRoles.ps1               Assign RBAC roles to the identity
       Step 4 - Import-Modules.ps1              Import Az modules into the account (~10 min)
-      Step 5 - New-Runbook.ps1                 Upload runbook + create daily schedule
+      Step 5 - New-Runbook.ps1                 Upload shutdown runbook + create daily schedule
+      Step 6 - New-StartupRunbook.ps1          Upload startup runbook + create daily schedule
+      Step 7 - Set-AlertRule.ps1               Create Azure Monitor alerts for job failures
 
     No resources are created. Everything targets infrastructure that already exists.
     Each step saves state to .autoshutdown-state.json so you can run steps
@@ -35,8 +37,11 @@
     Comma-separated list of subscription IDs for the runbook to process.
     Leave empty to process all subscriptions the Managed Identity can access.
 
+.PARAMETER AlertEmail
+    Email address to receive failure alerts (used by Set-AlertRule.ps1).
+
 .PARAMETER StartFromStep
-    Resume from a specific step (1-6) if a previous run failed.
+    Resume from a specific step (1-7) if a previous run failed.
     Default: 1
 
 .EXAMPLE
@@ -72,6 +77,7 @@ param (
     [string] $ScheduleTime          = "19:00",
     [string] $StartupScheduleTime   = "07:00",
     [string] $SubscriptionIds       = "",
+    [string] $AlertEmail            = "",
     [int]    $StartFromStep         = 1
 )
 
@@ -114,7 +120,7 @@ function Invoke-Step {
 
     Write-Host ""
     Write-Host "  +-----------------------------------------------------+" -ForegroundColor DarkCyan
-    Write-Host ("  |  Step {0}/6 - {1,-43}|" -f $Number, $Title)           -ForegroundColor White
+    Write-Host ("  |  Step {0}/7 - {1,-43}|" -f $Number, $Title)           -ForegroundColor White
     Write-Host "  +-----------------------------------------------------+" -ForegroundColor DarkCyan
     Write-Host ""
 
@@ -138,7 +144,7 @@ function Invoke-Step {
     Write-Host ""
     Write-Host "  Step $Number complete." -ForegroundColor Green
 
-    if ($Number -lt 6) {
+    if ($Number -lt 7) {
         Write-Host "  Continuing to step $($Number + 1) in 5 seconds..." -ForegroundColor Gray
         Start-Sleep -Seconds 5
     }
@@ -160,6 +166,10 @@ $step6Params = @{}
 if ($StartupScheduleTime -ne "") { $step6Params["ScheduleTime"]    = $StartupScheduleTime }
 if ($SubscriptionIds     -ne "") { $step6Params["SubscriptionIds"] = $SubscriptionIds }
 
+# -- Step 7 params (alert rules) -----------------------------------------------
+$step7Params = @{}
+if ($AlertEmail -ne "") { $step7Params["AlertEmail"] = $AlertEmail }
+
 # -- Run all steps -------------------------------------------------------------
 Invoke-Step 1 "Select RG + Create Automation Account" "New-AutoShutdownInfra.ps1"      $step1Params
 Invoke-Step 2 "Enable Managed Identity"               "Set-ManagedIdentity.ps1"        @{}
@@ -167,6 +177,7 @@ Invoke-Step 3 "Assign RBAC Roles"                     "Set-RBACRoles.ps1"       
 Invoke-Step 4 "Import Az Modules (~10 min)"           "Import-Modules.ps1"             @{}
 Invoke-Step 5 "Deploy Shutdown Runbook + Schedule"    "New-Runbook.ps1"                $step5Params
 Invoke-Step 6 "Deploy Startup Runbook + Schedule"     "New-StartupRunbook.ps1"         $step6Params
+Invoke-Step 7 "Create Azure Monitor Alert Rules"      "Set-AlertRule.ps1"              $step7Params
 
 # -- Final summary -------------------------------------------------------------
 $state = Read-State
@@ -180,9 +191,10 @@ Write-Host "  Subscription       : $($state.SubscriptionName)"        -Foregroun
 Write-Host "  Resource Group     : $($state.ResourceGroupName)"       -ForegroundColor White
 Write-Host "  Automation Account : $($state.AutomationAccountName)"   -ForegroundColor White
 Write-Host "  Managed Identity   : $($state.ManagedIdentityObjectId)" -ForegroundColor White
-Write-Host "  Shutdown schedule  : Daily at $ScheduleTime CET"        -ForegroundColor White
-Write-Host "  Startup schedule   : Daily at $StartupScheduleTime CET" -ForegroundColor White
-Write-Host "  WhatIf mode        : ON - no VMs will be started or stopped yet" -ForegroundColor Yellow
+Write-Host "  Shutdown schedule  : Daily at $ScheduleTime CET"                   -ForegroundColor White
+Write-Host "  Startup schedule   : Daily at $StartupScheduleTime CET"            -ForegroundColor White
+Write-Host "  Alert email        : $(if ($AlertEmail -ne '') { $AlertEmail } else { '(default in Set-AlertRule.ps1)' })" -ForegroundColor White
+Write-Host "  WhatIf mode        : ON - no VMs will be started or stopped yet"   -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  What to do next:" -ForegroundColor Cyan
 Write-Host ""

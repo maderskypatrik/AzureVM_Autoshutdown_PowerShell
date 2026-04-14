@@ -27,13 +27,14 @@ The solution runs entirely inside Azure Automation. A System-assigned Managed Id
 ```
 setup/
   _Helpers.ps1                  # Shared functions — auth, logging, state file, pickers
-  Install-AutoShutdown.ps1      # Master orchestrator — runs all 5 setup steps
+  Install-AutoShutdown.ps1      # Master orchestrator — runs all 7 setup steps
   New-AutoShutdownInfra.ps1     # Step 1 — creates Automation Account in existing RG
   Set-ManagedIdentity.ps1       # Step 2 — enables Managed Identity
   Set-RBACRoles.ps1             # Step 3 — assigns RBAC roles
   Import-Modules.ps1            # Step 4 — imports Az modules into Automation Account
   New-Runbook.ps1               # Step 5 — uploads shutdown runbook and creates schedule
-  New-StartupRunbook.ps1        # Uploads startup runbook and creates schedule
+  New-StartupRunbook.ps1        # Step 6 — uploads startup runbook and creates schedule
+  Set-AlertRule.ps1             # Step 7 — creates Azure Monitor alerts for job failures
   Add-ShutdownTag.ps1           # Interactively tags VMs for auto-shutdown
   Remove-ShutdownTag.ps1        # Interactively offboards VMs from auto-shutdown
   Add-StartupTag.ps1            # Interactively tags VMs for auto-startup
@@ -58,12 +59,12 @@ Setup scripts pass state to each other via `.autoshutdown-state.json`.
 .\Install-AutoShutdown.ps1
 ```
 
-This runs all 6 steps and sets up both runbooks. Both start in **WhatIf mode** — no VMs will be touched until you explicitly enable live mode.
+This runs all 7 steps and sets up both runbooks and failure alerts. Both runbooks start in **WhatIf mode** — no VMs will be touched until you explicitly enable live mode.
 
-### Custom schedule times
+### Custom schedule times and alert email
 
 ```powershell
-.\Install-AutoShutdown.ps1 -ScheduleTime '18:00' -StartupScheduleTime '06:30'
+.\Install-AutoShutdown.ps1 -ScheduleTime '18:00' -StartupScheduleTime '06:30' -AlertEmail 'myteam@company.com'
 ```
 
 ### Resume from a specific step
@@ -82,6 +83,7 @@ This runs all 6 steps and sets up both runbooks. Both start in **WhatIf mode** �
 | 4 | `Import-Modules.ps1` | Imports Az.Accounts, Az.Compute, Az.ResourceGraph |
 | 5 | `New-Runbook.ps1` | Uploads shutdown runbook (PS 7.2), creates daily schedule (default 19:00 CET) |
 | 6 | `New-StartupRunbook.ps1` | Uploads startup runbook (PS 7.2), creates daily schedule (default 07:00 CET) |
+| 7 | `Set-AlertRule.ps1` | Creates Azure Monitor alert rules — emails on any failed job |
 
 ### Enable live mode after validating WhatIf output
 
