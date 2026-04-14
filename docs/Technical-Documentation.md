@@ -65,6 +65,9 @@ The solution is implemented entirely within **Azure Automation**. There are no c
 | `Az.Accounts` | PS Module (runtime 7.2) | Azure authentication |
 | `Az.Compute` | PS Module (runtime 7.2) | VM management cmdlets |
 | `Az.ResourceGraph` v1.2.1 | PS Module (runtime 7.2) | Required for Azure Local VM queries |
+| `ag-autoshutdown-alert` | Azure Monitor Action Group | Sends email on any runbook failure |
+| `alert-autoshutdown-failure` | Azure Monitor Alert Rule | Fires when `Invoke-AutoShutdown` job fails |
+| `alert-autostartup-failure` | Azure Monitor Alert Rule | Fires when `Invoke-AutoStartup` job fails |
 
 ---
 
@@ -80,6 +83,7 @@ setup/
   Import-Modules.ps1            # Step 4 — imports Az modules into Automation Account
   New-Runbook.ps1               # Step 5 — uploads shutdown runbook, creates schedule
   New-StartupRunbook.ps1        # Step 6 — uploads startup runbook, creates schedule
+  Set-AlertRule.ps1             # Step 7 — creates Azure Monitor alert rules for job failures
   Add-ShutdownTag.ps1           # Utility — interactively tags VMs for auto-shutdown
   Remove-ShutdownTag.ps1        # Utility — interactively offboards VMs from shutdown
   Add-StartupTag.ps1            # Utility — interactively tags VMs for auto-startup
@@ -142,11 +146,12 @@ The orchestrator runs 6 steps in sequence. Each step saves state to `.autoshutdo
 | 4 | `Import-Modules.ps1` | Imports `Az.Accounts`, `Az.Compute`, `Az.ResourceGraph` v1.2.1 into the account (takes ~10 min) |
 | 5 | `New-Runbook.ps1` | Uploads `Invoke-AutoShutdown.ps1`, publishes with PS 7.2 runtime, creates daily schedule |
 | 6 | `New-StartupRunbook.ps1` | Uploads `Invoke-AutoStartup.ps1`, publishes with PS 7.2 runtime, creates daily schedule |
+| 7 | `Set-AlertRule.ps1` | Creates one Action Group and two Azure Monitor alert rules for runbook failures |
 
-### 6.3 Custom schedule times
+### 6.3 Custom schedule times and alert email
 
 ```powershell
-.\Install-AutoShutdown.ps1 -ScheduleTime '18:00' -StartupScheduleTime '06:30'
+.\Install-AutoShutdown.ps1 -ScheduleTime '18:00' -StartupScheduleTime '06:30' -AlertEmail 'myteam@company.com'
 ```
 
 Times are expressed in **CET (DST-aware)**. The schedule timezone is set to `Central European Standard Time` — Azure automatically adjusts between CET (UTC+1) and CEST (UTC+2) across DST transitions.
@@ -236,7 +241,34 @@ Azure Local VMs (`microsoft.azurestackhci/virtualmachineinstances`) are queried 
 
 ---
 
-## 10. Monitoring
+## 10. Alerting
+
+Failure alerts are configured by `Set-AlertRule.ps1` (Step 7). The script creates:
+
+| Resource | Name | Purpose |
+|---|---|---|
+| Action Group | `ag-autoshutdown-alert` | Sends email to the configured recipient on any trigger |
+| Alert Rule | `alert-autoshutdown-failure` | Fires when `Invoke-AutoShutdown` job status = Failed |
+| Alert Rule | `alert-autostartup-failure` | Fires when `Invoke-AutoStartup` job status = Failed |
+
+### Alert behaviour
+
+- **Trigger:** Azure Monitor evaluates the `TotalJob` metric on the Automation Account every **5 minutes**, filtered to `Status = Failed` and the specific runbook name.
+- **Delivery:** Email is sent within 5 minutes of a failed job via the Action Group.
+- **No daily reports:** Alerts are failure-only. Successful runs produce no email.
+- **Severity:** Level 2 (Warning).
+
+### Change the alert email after deployment
+
+```powershell
+.\Set-AlertRule.ps1 -AlertEmail 'newrecipient@company.com'
+```
+
+The script is idempotent — re-running it updates the existing Action Group and skips alert rules that already exist.
+
+---
+
+## 11. Monitoring (Job History)
 
 Every runbook execution creates an **Azure Automation Job**.
 
@@ -276,7 +308,7 @@ Errors                   : 0
 
 ---
 
-## 11. Utility Scripts
+## 12. Utility Scripts
 
 ### Add-ShutdownTag.ps1 / Add-StartupTag.ps1
 
@@ -305,7 +337,7 @@ Lists recent Automation job results for quick status checks.
 
 ---
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 ### Az.ResourceGraph not recognized
 
@@ -342,7 +374,7 @@ You have exactly one subscription or one Resource Group. Ensure you are running 
 
 ---
 
-## 13. Maintenance
+## 14. Maintenance
 
 ### Update a runbook after code changes
 

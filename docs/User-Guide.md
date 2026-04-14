@@ -167,6 +167,16 @@ No. The VM is **deallocated** (stopped), not deleted. All disks, data, and confi
 
 ---
 
+## Failure notifications
+
+The PowerCloud Team has set up automatic failure alerts. If a scheduled shutdown or startup job fails for any reason, the team will receive an email notification within 5 minutes and will investigate.
+
+**You do not need to monitor the automation yourself.** However, if you notice that a VM was not stopped or started as expected and have not heard from the PowerCloud Team, please raise a ticket through the IT service desk.
+
+> Alerts are failure-only — no email is sent when everything runs normally.
+
+---
+
 ## Contact
 
 For issues, tag changes, or schedule modifications, contact the **PowerCloud Team** or raise a request through your standard IT service desk.
