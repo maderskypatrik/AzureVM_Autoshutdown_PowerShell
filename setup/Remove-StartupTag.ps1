@@ -1,11 +1,11 @@
-﻿<#
+<#
 .SYNOPSIS
-    US-12 | Interactively offboards VMs from Autoshutdown.
+    Interactively offboards VMs from Auto-startup.
 
 .DESCRIPTION
-    Lists all VMs that currently have the 'shutdown' tag and lets you either:
-      A) Add 'donotshutdown' tag  — VM stays excluded but can be re-enrolled easily
-      B) Remove 'shutdown' tag    — VM is completely removed from autoshutdown
+    Lists all VMs that currently have the 'startup' tag and lets you either:
+      A) Add 'donotstart' tag   — VM stays excluded but can be re-enrolled easily
+      B) Remove 'startup' tag   — VM is completely removed from auto-startup
 
 .PARAMETER ResourceGroupName
     Optional. Filter VMs to a specific Resource Group.
@@ -14,10 +14,10 @@
     Optional. Defaults to .autoshutdown-state.json.
 
 .EXAMPLE
-    .\Remove-ShutdownTag.ps1
+    .\Remove-StartupTag.ps1
 
 .EXAMPLE
-    .\Remove-ShutdownTag.ps1 -ResourceGroupName "rg-myproject"
+    .\Remove-StartupTag.ps1 -ResourceGroupName "rg-myproject"
 
 .NOTES
     Permissions required : Contributor on the VM resources
@@ -34,7 +34,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-Write-Banner "US-12 | Offboard VMs from Autoshutdown"
+Write-Banner "Offboard VMs from Auto-startup"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Compute")
@@ -53,7 +53,7 @@ if ($SubscriptionId -eq "") {
 }
 
 # -- Fetch tagged VMs ----------------------------------------------------------
-Write-Step "Fetching VMs with shutdown or donotshutdown tags..."
+Write-Step "Fetching VMs with startup or donotstart tags..."
 
 if ($ResourceGroupName -ne "") {
     $allVMs = @(Get-AzVM -ResourceGroupName $ResourceGroupName -ErrorAction Stop)
@@ -61,19 +61,19 @@ if ($ResourceGroupName -ne "") {
     $allVMs = @(Get-AzVM -ErrorAction Stop)
 }
 
-# Filter to only VMs that have shutdown or donotshutdown tag
+# Filter to only VMs that have startup or donotstart tag
 $taggedVMs = @($allVMs | Where-Object {
     $t = $_.Tags
-    ($t -and ($t.Keys | Where-Object { $_ -ieq "shutdown" })) -or
-    ($t -and ($t.Keys | Where-Object { $_ -ieq "donotshutdown" }))
+    ($t -and ($t.Keys | Where-Object { $_ -ieq "startup" })) -or
+    ($t -and ($t.Keys | Where-Object { $_ -ieq "donotstart" }))
 } | Sort-Object ResourceGroupName, Name)
 
 if ($taggedVMs.Count -eq 0) {
-    Write-Warn "No VMs with shutdown or donotshutdown tags found."
+    Write-Warn "No VMs with startup or donotstart tags found."
     exit 0
 }
 
-Write-Success "Found $($taggedVMs.Count) VM(s) with autoshutdown tags."
+Write-Success "Found $($taggedVMs.Count) VM(s) with auto-startup tags."
 
 # -- Display list --------------------------------------------------------------
 Write-Host ""
@@ -92,14 +92,14 @@ for ($i = 0; $i -lt $taggedVMs.Count; $i++) {
     $vm   = $taggedVMs[$i]
     $tags = $vm.Tags
 
-    $hasShutdown      = $tags -and ($tags.Keys | Where-Object { $_ -ieq "shutdown" })
-    $hasDoNotShutdown = $tags -and ($tags.Keys | Where-Object { $_ -ieq "donotshutdown" })
+    $hasStartup    = $tags -and ($tags.Keys | Where-Object { $_ -ieq "startup" })
+    $hasDoNotStart = $tags -and ($tags.Keys | Where-Object { $_ -ieq "donotstart" })
 
-    $status = if ($hasDoNotShutdown -and $hasShutdown) { "excluded (donotshutdown + shutdown)" }
-              elseif ($hasDoNotShutdown)                { "excluded (donotshutdown only)"       }
-              else                                      { "enrolled (shutdown)"                 }
+    $status = if ($hasDoNotStart -and $hasStartup) { "excluded (donotstart + startup)" }
+              elseif ($hasDoNotStart)               { "excluded (donotstart only)"      }
+              else                                  { "enrolled (startup)"              }
 
-    $color = if ($hasDoNotShutdown) { "Yellow" } else { "Green" }
+    $color = if ($hasDoNotStart) { "Yellow" } else { "Green" }
 
     Write-Host ("  {0,4}  {1,-$padName}  {2,-$padRg}  {3}" -f `
         ($i + 1), $vm.Name, $vm.ResourceGroupName, $status) -ForegroundColor $color
@@ -142,12 +142,12 @@ if ($selectedVMs.Count -eq 0) {
 Write-Host ""
 Write-Host "  How do you want to offboard these VMs?" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  [A]  Add 'donotshutdown' tag  — VM stays excluded but can be" -ForegroundColor White
-Write-Host "       re-enrolled easily by removing the donotshutdown tag" -ForegroundColor Gray
+Write-Host "  [A]  Add 'donotstart' tag   — VM stays excluded but can be" -ForegroundColor White
+Write-Host "       re-enrolled easily by removing the donotstart tag" -ForegroundColor Gray
 Write-Host "       (recommended for temporary exclusions)" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  [B]  Remove 'shutdown' tag    — VM is fully removed from" -ForegroundColor White
-Write-Host "       autoshutdown. Re-add the shutdown tag to re-enroll." -ForegroundColor Gray
+Write-Host "  [B]  Remove 'startup' tag   — VM is fully removed from" -ForegroundColor White
+Write-Host "       auto-startup. Re-add the startup tag to re-enroll." -ForegroundColor Gray
 Write-Host "       (recommended for permanent removal)" -ForegroundColor Gray
 Write-Host ""
 
@@ -161,7 +161,7 @@ while (-not $method) {
 
 # -- Confirm -------------------------------------------------------------------
 Write-Host ""
-$action = if ($method -eq "A") { "add 'donotshutdown' tag to" } else { "remove 'shutdown' tag from" }
+$action = if ($method -eq "A") { "add 'donotstart' tag to" } else { "remove 'startup' tag from" }
 Write-Host "  You are about to $action $($selectedVMs.Count) VM(s):" -ForegroundColor Cyan
 foreach ($vm in $selectedVMs) {
     Write-Host "    - $($vm.Name)  (RG: $($vm.ResourceGroupName))" -ForegroundColor White
@@ -185,21 +185,21 @@ foreach ($vm in $selectedVMs) {
 
     try {
         if ($method -eq "A") {
-            # Add donotshutdown tag
+            # Add donotstart tag
             Update-AzTag `
                 -ResourceId $vm.Id `
-                -Tag        @{ donotshutdown = "true" } `
+                -Tag        @{ donotstart = "true" } `
                 -Operation  Merge `
                 -ErrorAction Stop | Out-Null
-            Write-Success "  Added 'donotshutdown' tag to $($vm.Name)"
+            Write-Success "  Added 'donotstart' tag to $($vm.Name)"
         } else {
-            # Remove shutdown tag
+            # Remove startup tag
             Update-AzTag `
                 -ResourceId $vm.Id `
-                -Tag        @{ shutdown = "" } `
+                -Tag        @{ startup = "" } `
                 -Operation  Delete `
                 -ErrorAction Stop | Out-Null
-            Write-Success "  Removed 'shutdown' tag from $($vm.Name)"
+            Write-Success "  Removed 'startup' tag from $($vm.Name)"
         }
         $success++
     } catch {
@@ -216,10 +216,10 @@ Write-Host "  Failed               : $failed"  -ForegroundColor $(if ($failed -g
 Write-Host ""
 
 if ($method -eq "A") {
-    Write-Host "  VMs with 'donotshutdown' tag will be skipped on all future runs." -ForegroundColor Gray
-    Write-Host "  To re-enroll: remove the 'donotshutdown' tag or run Add-ShutdownTag.ps1" -ForegroundColor Gray
+    Write-Host "  VMs with 'donotstart' tag will be skipped on all future runs." -ForegroundColor Gray
+    Write-Host "  To re-enroll: remove the 'donotstart' tag or run Add-StartupTag.ps1" -ForegroundColor Gray
 } else {
-    Write-Host "  VMs without the 'shutdown' tag will be ignored on all future runs." -ForegroundColor Gray
-    Write-Host "  To re-enroll: run Add-ShutdownTag.ps1" -ForegroundColor Gray
+    Write-Host "  VMs without the 'startup' tag will be ignored on all future runs." -ForegroundColor Gray
+    Write-Host "  To re-enroll: run Add-StartupTag.ps1" -ForegroundColor Gray
 }
 Write-Host ""

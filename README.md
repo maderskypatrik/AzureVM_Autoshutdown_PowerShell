@@ -1,21 +1,23 @@
-# VM Autoshutdown
+# VM Auto-shutdown & Auto-startup
 
-> Automated daily shutdown for Azure VMs using Azure Automation — no stored credentials, tag-based filtering, and least-privilege access.
+> Automated daily shutdown **and startup** for Azure VMs using Azure Automation — no stored credentials, tag-based filtering, and least-privilege access.
 
-**PowerCloud Team · v1.0 · Internal use only**
+**PowerCloud Team · v1.1 · Internal use only**
 
 ---
 
 ## Overview
 
-The solution runs entirely inside Azure Automation. A System-assigned Managed Identity authenticates the runbook — no stored credentials. The runbook is triggered daily by a schedule and processes all accessible subscriptions in a single job.
+The solution runs entirely inside Azure Automation. A System-assigned Managed Identity authenticates the runbooks — no stored credentials. Each runbook is triggered daily by its own schedule and processes all accessible subscriptions in a single job.
 
 | Component | Type | Purpose |
 |---|---|---|
-| `aa-autoshutdown` | Azure Automation Account | Hosts the runbook, schedule, and modules |
-| System-assigned MI | Managed Identity | Authenticates runbook to Azure — no passwords |
-| `Invoke-AutoShutdown.ps1` | PowerShell 7.2 Runbook | Core shutdown logic with tag filtering |
-| `sched-autoshutdown-daily` | Automation Schedule | Daily trigger at configured UTC time |
+| `aa-autoshutdown` | Azure Automation Account | Hosts runbooks, schedules, and modules |
+| System-assigned MI | Managed Identity | Authenticates runbooks to Azure — no passwords |
+| `Invoke-AutoShutdown.ps1` | PowerShell 7.2 Runbook | Stops VMs tagged with `shutdown` |
+| `Invoke-AutoStartup.ps1` | PowerShell 7.2 Runbook | Starts VMs tagged with `startup` |
+| `sched-autoshutdown-daily` | Automation Schedule | Daily shutdown trigger (default 19:00 UTC) |
+| `sched-autostartup-daily` | Automation Schedule | Daily startup trigger (default 07:00 UTC) |
 | `Az.Accounts` / `Az.Compute` / `Az.ResourceGraph` | PS Modules | Required Az cmdlets imported into the account |
 
 ---
@@ -25,26 +27,32 @@ The solution runs entirely inside Azure Automation. A System-assigned Managed Id
 ```
 setup/
   _Helpers.ps1                  # Shared functions — auth, logging, state file, pickers
-  Install-AutoShutdown.ps1      # Master orchestrator — runs all 5 steps
+  Install-AutoShutdown.ps1      # Master orchestrator — runs all 5 setup steps
   New-AutoShutdownInfra.ps1     # Step 1 — creates Automation Account in existing RG
   Set-ManagedIdentity.ps1       # Step 2 — enables Managed Identity
   Set-RBACRoles.ps1             # Step 3 — assigns RBAC roles
   Import-Modules.ps1            # Step 4 — imports Az modules into Automation Account
-  New-Runbook.ps1               # Step 5 — uploads runbook and creates schedule
+  New-Runbook.ps1               # Step 5 — uploads shutdown runbook and creates schedule
+  New-StartupRunbook.ps1        # Uploads startup runbook and creates schedule
+  Add-ShutdownTag.ps1           # Interactively tags VMs for auto-shutdown
+  Remove-ShutdownTag.ps1        # Interactively offboards VMs from auto-shutdown
+  Add-StartupTag.ps1            # Interactively tags VMs for auto-startup
+  Remove-StartupTag.ps1         # Interactively offboards VMs from auto-startup
 
 runbook/
-  Invoke-AutoShutdown.ps1       # The runbook itself — deployed to Azure Automation
+  Invoke-AutoShutdown.ps1       # Shutdown runbook — deployed to Azure Automation
+  Invoke-AutoStartup.ps1        # Startup runbook  — deployed to Azure Automation
 ```
 
 ---
 
 ## Setup
 
-The `setup/` folder contains scripts that configure Azure — they run **once from your local machine**. The `runbook/` folder contains `Invoke-AutoShutdown.ps1` — this gets uploaded to Azure Automation by step 5 and then runs in the cloud on the daily schedule. You never run `Invoke-AutoShutdown.ps1` directly.
+The `setup/` folder contains scripts that configure Azure — they run **once from your local machine**. The `runbook/` folder contains the runbooks — these get uploaded to Azure Automation and run in the cloud on their daily schedules. You never run them directly.
 
 Setup scripts pass state to each other via `.autoshutdown-state.json`.
 
-### Run all steps at once
+### Run all shutdown setup steps at once
 
 ```powershell
 .\Install-AutoShutdown.ps1
@@ -56,7 +64,7 @@ Setup scripts pass state to each other via `.autoshutdown-state.json`.
 .\Install-AutoShutdown.ps1 -StartFromStep 3
 ```
 
-### Steps
+### Setup steps
 
 | # | Script | Purpose |
 |---|---|---|
@@ -64,37 +72,76 @@ Setup scripts pass state to each other via `.autoshutdown-state.json`.
 | 2 | `Set-ManagedIdentity.ps1` | Enables System-assigned Managed Identity, saves Object ID |
 | 3 | `Set-RBACRoles.ps1` | Assigns VM Contributor + Reader at subscription scope |
 | 4 | `Import-Modules.ps1` | Imports Az.Accounts, Az.Compute, Az.ResourceGraph |
-| 5 | `New-Runbook.ps1` | Uploads runbook to Azure Automation, publishes it (PS 7.2), creates daily schedule |
+| 5 | `New-Runbook.ps1` | Uploads shutdown runbook, publishes it (PS 7.2), creates daily schedule |
+
+### Deploy the startup runbook (after shutdown setup)
+
+```powershell
+# First deployment — WhatIf mode (safe, no VMs will be started)
+.\New-StartupRunbook.ps1
+
+# After validating WhatIf output — enable live startups
+.\New-StartupRunbook.ps1 -DisableWhatIf
+
+# Custom startup time
+.\New-StartupRunbook.ps1 -DisableWhatIf -ScheduleTime '06:00'
+```
+
+---
+
+## Tag Reference
+
+All tag key matching is **case-insensitive**. Tag values are ignored — only the key presence matters.
+
+| Tag | Runbook | Effect |
+|---|---|---|
+| `shutdown` | `Invoke-AutoShutdown` | VM is stopped (deallocated) on the daily schedule |
+| `donotshutdown` | `Invoke-AutoShutdown` | VM is excluded from shutdown — takes priority over `shutdown` |
+| `startup` | `Invoke-AutoStartup` | VM is started on the daily schedule |
+| `donotstart` | `Invoke-AutoStartup` | VM is excluded from startup — takes priority over `startup` |
+
+A VM can have both `shutdown` and `startup` tags to be automatically stopped in the evening and started in the morning.
 
 ---
 
 ## Runbook Logic
 
-### Tag filtering (case-insensitive key, value ignored)
+### Auto-shutdown (`Invoke-AutoShutdown.ps1`)
 
 Evaluated in priority order for every VM:
 
 | Priority | Condition | Action |
 |---|---|---|
 | 1 (highest) | Has `donotshutdown` tag | **SKIP** — always wins |
-| 2 | Has no shutdown tag | **SKIP** |
+| 2 | No `shutdown` tag | **SKIP** |
 | 3 | Already deallocated | **SKIP** |
 | 4 | Has `shutdown` tag | **STOP** (deallocate) |
 
-### Resource types
+### Auto-startup (`Invoke-AutoStartup.ps1`)
 
-| Resource Type | Method |
-|---|---|
-| `Microsoft.Compute/virtualMachines` | Stopped via `Stop-AzVM` |
-| `Microsoft.AzureStackHCI/virtualMachineInstances` | Stopped via REST `POST /stop` |
-| `Microsoft.AzureStackHCI/servers` | **Never touched** |
+Evaluated in priority order for every VM:
 
-### Parameters
+| Priority | Condition | Action |
+|---|---|---|
+| 1 (highest) | Has `donotstart` tag | **SKIP** — always wins |
+| 2 | No `startup` tag | **SKIP** |
+| 3 | Already running | **SKIP** |
+| 4 | Has `startup` tag | **START** |
+
+### Resource types (both runbooks)
+
+| Resource Type | Shutdown method | Startup method |
+|---|---|---|
+| `Microsoft.Compute/virtualMachines` | `Stop-AzVM` | `Start-AzVM` |
+| `Microsoft.AzureStackHCI/virtualMachineInstances` | REST `POST /stop` | REST `POST /start` |
+| `Microsoft.AzureStackHCI/servers` | **Never touched** | **Never touched** |
+
+### Parameters (both runbooks)
 
 | Parameter | Default | Description |
 |---|---|---|
 | `SubscriptionIds` | `""` (all accessible) | Comma-separated subscription IDs to process |
-| `WhatIf` | `$false` | Set `$true` for dry run — logs actions without stopping VMs |
+| `WhatIf` | `$false` | Set `$true` for dry run — logs actions without touching VMs |
 
 ---
 
@@ -104,45 +151,105 @@ All permissions are assigned by `Set-RBACRoles.ps1` at subscription scope.
 
 | Role | Purpose |
 |---|---|
-| Virtual Machine Contributor | Allows `Get-AzVM` and `Stop-AzVM` |
+| Virtual Machine Contributor | Allows `Get-AzVM`, `Stop-AzVM`, and `Start-AzVM` |
 | Reader | Allows `Search-AzGraph` for HCI VM queries |
 | Azure Connected Machine Resource Manager | Optional — HCI clusters only |
 
-> **Least privilege:** No Owner or broad Contributor roles are assigned. The Managed Identity can only stop VMs and read resources — nothing else.
+> **Least privilege:** No Owner or broad Contributor roles are assigned. The Managed Identity can only start/stop VMs and read resources — nothing else.
 
 ---
 
 ## Common Operations
 
-### Change the shutdown time
+### Shutdown runbook
+
+#### Change the shutdown time
 
 ```powershell
 .\New-Runbook.ps1 -ScheduleTime '17:00'   # time in UTC
 ```
 
-### Enable live shutdowns after WhatIf testing
+#### Enable live shutdowns after WhatIf testing
 
 ```powershell
 .\New-Runbook.ps1 -DisableWhatIf
 ```
 
-### Tag a VM for autoshutdown
+#### Enroll a VM in auto-shutdown (interactive)
+
+```powershell
+.\Add-ShutdownTag.ps1
+```
+
+#### Offboard a VM from auto-shutdown (interactive)
+
+```powershell
+.\Remove-ShutdownTag.ps1
+```
+
+#### Tag a VM for auto-shutdown (manual)
 
 ```powershell
 $vm = Get-AzVM -Name 'your-vm' -ResourceGroupName 'your-rg'
 Update-AzTag -ResourceId $vm.Id -Tag @{ shutdown = 'true' } -Operation Merge
 ```
 
-### Exclude a VM from autoshutdown
+#### Exclude a VM from auto-shutdown (manual)
 
 ```powershell
 $vm = Get-AzVM -Name 'your-vm' -ResourceGroupName 'your-rg'
 Update-AzTag -ResourceId $vm.Id -Tag @{ donotshutdown = 'true' } -Operation Merge
 ```
 
-### Manually trigger a run in the Portal
+#### Manually trigger a shutdown run in the Portal
 
 **Automation Account → Runbooks → Invoke-AutoShutdown → Start → set `WhatIf = false` → OK**
+
+---
+
+### Startup runbook
+
+#### Change the startup time
+
+```powershell
+.\New-StartupRunbook.ps1 -ScheduleTime '06:00'   # time in UTC
+```
+
+#### Enable live startups after WhatIf testing
+
+```powershell
+.\New-StartupRunbook.ps1 -DisableWhatIf
+```
+
+#### Enroll a VM in auto-startup (interactive)
+
+```powershell
+.\Add-StartupTag.ps1
+```
+
+#### Offboard a VM from auto-startup (interactive)
+
+```powershell
+.\Remove-StartupTag.ps1
+```
+
+#### Tag a VM for auto-startup (manual)
+
+```powershell
+$vm = Get-AzVM -Name 'your-vm' -ResourceGroupName 'your-rg'
+Update-AzTag -ResourceId $vm.Id -Tag @{ startup = 'true' } -Operation Merge
+```
+
+#### Exclude a VM from auto-startup (manual)
+
+```powershell
+$vm = Get-AzVM -Name 'your-vm' -ResourceGroupName 'your-rg'
+Update-AzTag -ResourceId $vm.Id -Tag @{ donotstart = 'true' } -Operation Merge
+```
+
+#### Manually trigger a startup run in the Portal
+
+**Automation Account → Runbooks → Invoke-AutoStartup → Start → set `WhatIf = false` → OK**
 
 Monitor progress in **Jobs → Output**.
 
@@ -167,7 +274,7 @@ Jobs are retained for 30 days.
 </details>
 
 <details>
-<summary><code>403 Forbidden on Stop-AzVM</code></summary>
+<summary><code>403 Forbidden on Stop-AzVM / Start-AzVM</code></summary>
 
 Managed Identity is missing the Virtual Machine Contributor role on that subscription. Re-run `Set-RBACRoles.ps1` for that subscription.
 </details>
@@ -198,4 +305,4 @@ Get-ChildItem *.ps1 | Unblock-File
 
 ---
 
-*PowerCloud Team · VM Autoshutdown Technical Reference · v1.0 · Internal use only*
+*PowerCloud Team · VM Auto-shutdown & Auto-startup Technical Reference · v1.1 · Internal use only*
