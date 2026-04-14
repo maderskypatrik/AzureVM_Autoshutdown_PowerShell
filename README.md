@@ -172,7 +172,7 @@ All permissions are assigned by `Set-RBACRoles.ps1` at subscription scope.
 #### Change the shutdown time
 
 ```powershell
-.\New-Runbook.ps1 -ScheduleTime '17:00'   # time in UTC
+.\New-Runbook.ps1 -ScheduleTime '17:00'   # time in CET
 ```
 
 #### Enable live shutdowns after WhatIf testing
@@ -218,7 +218,7 @@ Update-AzTag -ResourceId $vm.Id -Tag @{ donotshutdown = 'true' } -Operation Merg
 #### Change the startup time
 
 ```powershell
-.\New-StartupRunbook.ps1 -ScheduleTime '06:00'   # time in UTC
+.\New-StartupRunbook.ps1 -ScheduleTime '06:00'   # time in CET
 ```
 
 #### Enable live startups after WhatIf testing
