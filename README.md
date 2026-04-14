@@ -52,10 +52,18 @@ The `setup/` folder contains scripts that configure Azure — they run **once fr
 
 Setup scripts pass state to each other via `.autoshutdown-state.json`.
 
-### Run all shutdown setup steps at once
+### Run full setup (shutdown + startup)
 
 ```powershell
 .\Install-AutoShutdown.ps1
+```
+
+This runs all 6 steps and sets up both runbooks. Both start in **WhatIf mode** — no VMs will be touched until you explicitly enable live mode.
+
+### Custom schedule times
+
+```powershell
+.\Install-AutoShutdown.ps1 -ScheduleTime '18:00' -StartupScheduleTime '06:30'
 ```
 
 ### Resume from a specific step
@@ -72,19 +80,17 @@ Setup scripts pass state to each other via `.autoshutdown-state.json`.
 | 2 | `Set-ManagedIdentity.ps1` | Enables System-assigned Managed Identity, saves Object ID |
 | 3 | `Set-RBACRoles.ps1` | Assigns VM Contributor + Reader at subscription scope |
 | 4 | `Import-Modules.ps1` | Imports Az.Accounts, Az.Compute, Az.ResourceGraph |
-| 5 | `New-Runbook.ps1` | Uploads shutdown runbook, publishes it (PS 7.2), creates daily schedule |
+| 5 | `New-Runbook.ps1` | Uploads shutdown runbook (PS 7.2), creates daily schedule (default 19:00 UTC) |
+| 6 | `New-StartupRunbook.ps1` | Uploads startup runbook (PS 7.2), creates daily schedule (default 07:00 UTC) |
 
-### Deploy the startup runbook (after shutdown setup)
+### Enable live mode after validating WhatIf output
 
 ```powershell
-# First deployment — WhatIf mode (safe, no VMs will be started)
-.\New-StartupRunbook.ps1
+# Enable live shutdowns
+.\New-Runbook.ps1 -DisableWhatIf
 
-# After validating WhatIf output — enable live startups
+# Enable live startups
 .\New-StartupRunbook.ps1 -DisableWhatIf
-
-# Custom startup time
-.\New-StartupRunbook.ps1 -DisableWhatIf -ScheduleTime '06:00'
 ```
 
 ---
