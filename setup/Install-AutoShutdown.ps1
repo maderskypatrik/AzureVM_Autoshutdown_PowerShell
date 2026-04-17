@@ -85,7 +85,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-$VERSION = "v1.0"
+$VERSION = "v1.1"
 
 function Test-LatestVersion {
     param([string] $Current)
@@ -96,9 +96,21 @@ function Test-LatestVersion {
         $latest = $response.tag_name
         if ($latest -and $latest -ne $Current) {
             Write-Host "  [!] Update available: $latest  (you have $Current)" -ForegroundColor Yellow
-            Write-Host "      To update: git pull  then re-run this script"    -ForegroundColor Yellow
+            Write-Host ""
+            $answer = Read-Host "  Pull latest version now and re-run? [Y/N]"
+            if ($answer -match '^[Yy]') {
+                Write-Host ""
+                Write-Host "  Running git pull..." -ForegroundColor Cyan
+                git -C $PSScriptRoot pull
+                Write-Host ""
+                Write-Host "  Please re-run the script to continue with the latest version." -ForegroundColor Cyan
+                exit 0
+            } else {
+                Write-Host ""
+                Write-Host "  Continuing with $Current — you are responsible for any issues caused by running an outdated version." -ForegroundColor DarkYellow
+            }
         } else {
-            Write-Host "  [OK] You are running the latest version: $Current"   -ForegroundColor Green
+            Write-Host "  [OK] You are running the latest version: $Current" -ForegroundColor Green
         }
         Write-Host ""
     } catch {
