@@ -1,10 +1,10 @@
 {
+  "AutomationAccountName": "aa-autoshutdown",
+  "Location": "westeurope",
   "SubscriptionName": "Azure subscription 1",
   "ResourceGroupName": "NetworkWatcherRG",
-  "Location": "westeurope",
   "SubscriptionId": "857d6836-8ca3-4e60-8f3f-34c39230eeae",
-  "AutomationAccountName": "aa-autoshutdown",
-  "ManagedIdentityObjectId": "207b2926-a6c3-4964-b142-490703eb74de",
-  "LastTestJobId": "75602075-ae04-4cdd-9a4c-ee5d1ae6cb89",
-  "LastStartupTestJobId": "ac6ca28f-98e8-4fd4-a364-2af3ec4573d1"
+  "ManagedIdentityObjectId": "66c9a67a-91ea-467a-a4b5-2672771db74c",
+  "LastTestJobId": "4a1c4c8f-624e-4e47-b9a8-ce820206f862",
+  "LastStartupTestJobId": "19cf66ff-2f1f-4ad4-a0d1-d3bd8edc3d21"
 }

@@ -85,6 +85,27 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
+$VERSION = "v1.0"
+
+function Test-LatestVersion {
+    param([string] $Current)
+    try {
+        $response = Invoke-RestMethod `
+            -Uri        "https://api.github.com/repos/maderskypatrik/AzureVM_Autoshutdown_PowerShell/releases/latest" `
+            -TimeoutSec 5
+        $latest = $response.tag_name
+        if ($latest -and $latest -ne $Current) {
+            Write-Host "  [!] Update available: $latest  (you have $Current)" -ForegroundColor Yellow
+            Write-Host "      To update: git pull  then re-run this script"    -ForegroundColor Yellow
+        } else {
+            Write-Host "  [OK] You are running the latest version: $Current"   -ForegroundColor Green
+        }
+        Write-Host ""
+    } catch {
+        # Version check is non-critical — network errors are silently ignored
+    }
+}
+
 # -- Title ---------------------------------------------------------------------
 Clear-Host
 Write-Host ""
@@ -98,6 +119,8 @@ Write-Host "  Azure Automation Account. No resources are created." -ForegroundCo
 Write-Host ""
 Write-Host "  Estimated time: 15-20 minutes (module import takes longest)" -ForegroundColor Gray
 Write-Host ""
+
+Test-LatestVersion $VERSION
 
 if ($StartFromStep -gt 1) {
     Write-Host "  Resuming from step $StartFromStep." -ForegroundColor Yellow

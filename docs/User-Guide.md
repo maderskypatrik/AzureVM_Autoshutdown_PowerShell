@@ -177,6 +177,31 @@ The PowerCloud Team has set up automatic failure alerts. If a scheduled shutdown
 
 ---
 
+## Updating the solution (for administrators)
+
+When a new version is released, `Install-AutoShutdown.ps1` will display a warning at startup:
+
+```
+[!] Update available: v1.2  (you have v1.1)
+    To update: git pull  then re-run this script
+```
+
+**Update procedure:**
+
+1. Open a terminal in the repository folder
+2. Pull the latest changes:
+   ```
+   git pull
+   ```
+3. Re-run the installer to apply any new or changed steps:
+   ```
+   .\setup\Install-AutoShutdown.ps1
+   ```
+
+> If only specific steps changed, you can use `-StartFromStep` to re-run only those steps instead of the full setup.
+
+---
+
 ## Contact
 
 For issues, tag changes, or schedule modifications, contact the **PowerCloud Team** or raise a request through your standard IT service desk.
