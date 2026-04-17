@@ -231,19 +231,56 @@ Write-Host "  Startup schedule   : Daily at $StartupScheduleTime CET"           
 Write-Host "  Alert email        : $(if ($AlertEmail -ne '') { $AlertEmail } else { '(default in Set-AlertRule.ps1)' })" -ForegroundColor White
 Write-Host "  WhatIf mode        : ON - no VMs will be started or stopped yet"   -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  What to do next:" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  1. Tag VMs for shutdown : .\Add-ShutdownTag.ps1"           -ForegroundColor White
-Write-Host "  2. Tag VMs for startup  : .\Add-StartupTag.ps1"            -ForegroundColor White
-Write-Host "  3. Trigger each runbook manually in Portal to verify WhatIf output" -ForegroundColor White
-Write-Host "  4. When satisfied, enable live shutdowns:"                  -ForegroundColor White
-Write-Host "       .\New-Runbook.ps1 -DisableWhatIf"                     -ForegroundColor Gray
-Write-Host "  5. When satisfied, enable live startups:"                   -ForegroundColor White
-Write-Host "       .\New-StartupRunbook.ps1 -DisableWhatIf"              -ForegroundColor Gray
-Write-Host ""
 Write-Host "  Tag reference:" -ForegroundColor Cyan
 Write-Host "    shutdown      — VM is stopped on the daily shutdown schedule" -ForegroundColor Gray
 Write-Host "    donotshutdown — VM is excluded from shutdown"                 -ForegroundColor Gray
 Write-Host "    startup       — VM is started on the daily startup schedule"  -ForegroundColor Gray
 Write-Host "    donotstart    — VM is excluded from startup"                  -ForegroundColor Gray
+Write-Host ""
+
+# -- VM onboarding -------------------------------------------------------------
+Write-Host "  +------------------------------------------------------+" -ForegroundColor DarkCyan
+Write-Host "  |  VM Onboarding                                       |" -ForegroundColor White
+Write-Host "  +------------------------------------------------------+" -ForegroundColor DarkCyan
+Write-Host ""
+Write-Host "  Would you like to tag VMs for shutdown and startup now?" -ForegroundColor Cyan
+Write-Host "  (You can always run Add-ShutdownTag.ps1 / Add-StartupTag.ps1 later)" -ForegroundColor Gray
+Write-Host ""
+
+$onboard = Read-Host "  Start VM onboarding now? [Y/N]"
+
+if ($onboard -match '^[Yy]') {
+    Write-Host ""
+    Write-Host "  --- Shutdown tagging ----------------------------------------" -ForegroundColor DarkCyan
+    Write-Host ""
+    & "$PSScriptRoot\Add-ShutdownTag.ps1"
+
+    Write-Host ""
+    Write-Host "  --- Startup tagging -----------------------------------------" -ForegroundColor DarkCyan
+    Write-Host ""
+    & "$PSScriptRoot\Add-StartupTag.ps1"
+
+    Write-Host ""
+    Write-Host "  VM onboarding complete." -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  What to do next:" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  1. Trigger each runbook manually in Portal to verify WhatIf output" -ForegroundColor White
+    Write-Host "  2. When satisfied, enable live shutdowns:"                           -ForegroundColor White
+    Write-Host "       .\New-Runbook.ps1 -DisableWhatIf"                              -ForegroundColor Gray
+    Write-Host "  3. When satisfied, enable live startups:"                            -ForegroundColor White
+    Write-Host "       .\New-StartupRunbook.ps1 -DisableWhatIf"                       -ForegroundColor Gray
+} else {
+    Write-Host ""
+    Write-Host "  Skipped. What to do next:" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  1. Tag VMs for shutdown : .\Add-ShutdownTag.ps1"                    -ForegroundColor White
+    Write-Host "  2. Tag VMs for startup  : .\Add-StartupTag.ps1"                     -ForegroundColor White
+    Write-Host "  3. Trigger each runbook manually in Portal to verify WhatIf output" -ForegroundColor White
+    Write-Host "  4. When satisfied, enable live shutdowns:"                           -ForegroundColor White
+    Write-Host "       .\New-Runbook.ps1 -DisableWhatIf"                              -ForegroundColor Gray
+    Write-Host "  5. When satisfied, enable live startups:"                            -ForegroundColor White
+    Write-Host "       .\New-StartupRunbook.ps1 -DisableWhatIf"                       -ForegroundColor Gray
+}
+
 Write-Host ""
