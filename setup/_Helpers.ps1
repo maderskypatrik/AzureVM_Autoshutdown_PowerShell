@@ -147,9 +147,9 @@ function Select-Subscription {
     # Input loop
     $selected = $null
     while (-not $selected) {
-        $input = Read-Host "  Enter number [1-$($subs.Count)]"
-        if ($input -match '^\d+$') {
-            $idx = [int]$input - 1
+        $userInput = Read-Host "  Enter number [1-$($subs.Count)]"
+        if ($userInput -match '^\d+$') {
+            $idx = [int]$userInput - 1
             if ($idx -ge 0 -and $idx -lt $subs.Count) {
                 $selected = $subs[$idx]
             }

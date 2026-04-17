@@ -1,0 +1,10 @@
+{
+  "SubscriptionName": "Azure subscription 1",
+  "ResourceGroupName": "NetworkWatcherRG",
+  "Location": "westeurope",
+  "SubscriptionId": "857d6836-8ca3-4e60-8f3f-34c39230eeae",
+  "AutomationAccountName": "aa-autoshutdown",
+  "ManagedIdentityObjectId": "207b2926-a6c3-4964-b142-490703eb74de",
+  "LastTestJobId": "75602075-ae04-4cdd-9a4c-ee5d1ae6cb89",
+  "LastStartupTestJobId": "ac6ca28f-98e8-4fd4-a364-2af3ec4573d1"
+}
