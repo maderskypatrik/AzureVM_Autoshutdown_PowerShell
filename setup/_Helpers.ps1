@@ -206,7 +206,7 @@ function Invoke-AcceptanceCriteria {
         [scriptblock[]]$Criteria,
         [string[]]$CriteriaNames
     )
-    Write-Banner "$StoryId - Acceptance Criteria Check"
+    Write-Banner "Acceptance Criteria Check"
     $passed = 0
     $failed = 0
     for ($i = 0; $i -lt $Criteria.Count; $i++) {

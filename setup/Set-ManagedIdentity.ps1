@@ -40,7 +40,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
 # -- Banner --------------------------------------------------------------------
-Write-Banner "US-01 (2/2) | Enable Managed Identity"
+Write-Banner "Enable Managed Identity"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Automation", "Az.Resources")

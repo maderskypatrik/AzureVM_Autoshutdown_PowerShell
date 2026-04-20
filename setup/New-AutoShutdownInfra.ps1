@@ -56,7 +56,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
 # -- Banner --------------------------------------------------------------------
-Write-Banner "US-01 (1/2) | Create Automation Account"
+Write-Banner "Create Automation Account"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Resources", "Az.Automation")

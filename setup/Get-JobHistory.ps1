@@ -41,7 +41,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-Write-Banner "US-09 | Autoshutdown Job History"
+Write-Banner "Autoshutdown Job History"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Automation")

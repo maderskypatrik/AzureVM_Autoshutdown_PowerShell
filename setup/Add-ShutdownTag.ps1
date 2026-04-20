@@ -36,7 +36,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-Write-Banner "US-11 | Onboard VMs to Autoshutdown"
+Write-Banner "Onboard VMs to Autoshutdown"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Compute")

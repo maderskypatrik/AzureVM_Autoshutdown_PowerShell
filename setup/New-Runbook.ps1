@@ -61,7 +61,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-Write-Banner "US-04+ | Deploy Runbook + Schedule"
+Write-Banner "Deploy Runbook + Schedule"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Automation")

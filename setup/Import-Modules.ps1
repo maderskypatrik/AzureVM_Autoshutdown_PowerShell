@@ -43,7 +43,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-Write-Banner "US-03 | Import Az Modules into Automation Account"
+Write-Banner "Import Az Modules into Automation Account"
 
 # -- Prerequisites -------------------------------------------------------------
 Assert-Modules @("Az.Accounts", "Az.Automation")
