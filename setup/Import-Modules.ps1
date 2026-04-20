@@ -190,5 +190,5 @@ if ($allOk) {
 Write-Host ""
 
 Write-NextSteps @(
-    ".\New-Runbook.ps1   - upload the runbook script and create the schedule   (US-04+)"
+    ".\New-Runbook.ps1   - upload the runbook script and create the schedule"
 )

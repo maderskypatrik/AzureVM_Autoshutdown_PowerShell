@@ -232,8 +232,8 @@ Write-Host "  Automation Account : $AutomationAccountName"  -ForegroundColor Whi
 Write-Host "  Location           : $Location"               -ForegroundColor White
 
 Write-NextSteps @(
-    ".\Set-ManagedIdentity.ps1   - enable Managed Identity on this account   (US-01 AC2)"
-    ".\Set-RBACRoles.ps1         - assign RBAC permissions                    (US-02)"
-    ".\Import-Modules.ps1        - import Az modules                          (US-03)"
-    ".\New-Runbook.ps1           - deploy runbook + schedule                  (US-04+)"
+    ".\Set-ManagedIdentity.ps1   - enable Managed Identity on this account"
+    ".\Set-RBACRoles.ps1         - assign RBAC permissions"
+    ".\Import-Modules.ps1        - import Az modules"
+    ".\New-Runbook.ps1           - deploy runbook + schedule"
 )

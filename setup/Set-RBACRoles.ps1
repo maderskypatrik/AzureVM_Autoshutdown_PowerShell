@@ -217,6 +217,6 @@ Write-Host "  Subscription : $SubscriptionId" -ForegroundColor White
 Write-Host ""
 
 Write-NextSteps @(
-    ".\Import-Modules.ps1   - import Az modules into the Automation Account   (US-03)"
-    ".\New-Runbook.ps1      - deploy the runbook and schedule                 (US-04+)"
+    ".\Import-Modules.ps1   - import Az modules into the Automation Account"
+    ".\New-Runbook.ps1      - deploy the runbook and schedule              "
 )

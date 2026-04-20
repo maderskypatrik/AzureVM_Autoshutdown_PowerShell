@@ -199,7 +199,7 @@ Write-Host ""
 Write-Host "  AC3 (PS 7.2 runtime): select Runtime version 7.2 when creating the runbook." -ForegroundColor Yellow
 
 Write-NextSteps @(
-    ".\Set-RBACRoles.ps1    - assign RBAC permissions to the identity above   (US-02)"
-    ".\Import-Modules.ps1   - import Az modules into the Automation Account   (US-03)"
-    ".\New-Runbook.ps1      - deploy the runbook and schedule                 (US-04+)"
+    ".\Set-RBACRoles.ps1    - assign RBAC permissions to the identity above"
+    ".\Import-Modules.ps1   - import Az modules into the Automation Account"
+    ".\New-Runbook.ps1      - deploy the runbook and schedule              "
 )
