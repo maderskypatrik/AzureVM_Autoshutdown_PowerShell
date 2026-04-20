@@ -95,7 +95,10 @@ function Invoke-VersionCheck {
         $response = Invoke-RestMethod -Uri $GitHubReleasesUrl -TimeoutSec 5
         $latest   = $response.tag_name
 
-        if ($latest -and $latest -ne $ScriptVersion) {
+        $latestVer  = [System.Version]($latest -replace '^v', '')
+        $currentVer = [System.Version]($ScriptVersion -replace '^v', '')
+
+        if ($latest -and $latestVer -gt $currentVer) {
             Write-Host "  [!] Update available: $latest  (you have $ScriptVersion)" -ForegroundColor Yellow
             Write-Host ""
             $answer = Read-Host "  Pull the latest version now and re-run? (y/n)"
