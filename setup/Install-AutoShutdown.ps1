@@ -98,11 +98,19 @@ function Invoke-VersionCheck {
         if ($latest -and $latest -ne $ScriptVersion) {
             Write-Host "  [!] Update available: $latest  (you have $ScriptVersion)" -ForegroundColor Yellow
             Write-Host ""
-            $answer = Read-Host "  Download the latest version from GitHub? (y/n)"
+            $answer = Read-Host "  Pull the latest version now and re-run? (y/n)"
             if ($answer -match '^[Yy]') {
-                Start-Process $GitHubRepoUrl
-                Write-Host ""
-                Write-Host "  Opened GitHub in your browser. Re-download and re-run the script." -ForegroundColor Cyan
+                try {
+                    Write-Host ""
+                    Write-Host "  Running git pull..." -ForegroundColor Cyan
+                    git -C "$PSScriptRoot\.." pull
+                    Write-Host ""
+                    Write-Host "  Update complete. Please re-run the script." -ForegroundColor Green
+                } catch {
+                    Write-Host ""
+                    Write-Host "  [WARN] Auto-update requires git clone. Download manually:" -ForegroundColor Yellow
+                    Write-Host "         $GitHubRepoUrl" -ForegroundColor Cyan
+                }
                 exit 0
             }
             Write-Host ""
