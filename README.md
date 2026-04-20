@@ -2,7 +2,7 @@
 
 > Automated daily shutdown **and startup** for Azure VMs using Azure Automation — no stored credentials, tag-based filtering, and least-privilege access.
 
-**PowerCloud Team · v1.1 · Internal use only**
+**PowerCloud Team · v1.4.1 · Internal use only**
 
 ---
 
@@ -43,6 +43,13 @@ setup/
 runbook/
   Invoke-AutoShutdown.ps1       # Shutdown runbook — deployed to Azure Automation
   Invoke-AutoStartup.ps1        # Startup runbook  — deployed to Azure Automation
+
+docs/
+  Technical-Documentation.md   # Engineering reference
+  User-Guide.md                 # Guide for subscription owners
+  Terms-of-Use.md               # Terms of Use — acceptance required at install time
+
+version.txt                     # Current release version — checked by Install-AutoShutdown.ps1
 ```
 
 ---
@@ -59,7 +66,11 @@ Setup scripts pass state to each other via `.autoshutdown-state.json`.
 .\Install-AutoShutdown.ps1
 ```
 
-This runs all 7 steps and sets up both runbooks and failure alerts. Both runbooks start in **WhatIf mode** — no VMs will be touched until you explicitly enable live mode.
+On startup the script will:
+1. **Terms of Use** — display the Terms of Use URL and require explicit `y` acceptance before proceeding.
+2. **Version check** — compare the local version against the latest GitHub release. If a newer version is available, offers to run `git pull` automatically (or shows the GitHub URL if not a git clone).
+
+It then runs all 7 steps and sets up both runbooks and failure alerts. Both runbooks start in **WhatIf mode** — no VMs will be touched until you explicitly enable live mode.
 
 ### Custom schedule times and alert email
 
@@ -313,4 +324,4 @@ Get-ChildItem *.ps1 | Unblock-File
 
 ---
 
-*PowerCloud Team · VM Auto-shutdown & Auto-startup Technical Reference · v1.1 · Internal use only*
+*PowerCloud Team · VM Auto-shutdown & Auto-startup Technical Reference · v1.4.1 · Internal use only*
