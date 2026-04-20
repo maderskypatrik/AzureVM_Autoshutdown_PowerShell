@@ -1,7 +1,7 @@
 # VM Auto-shutdown & Auto-startup — Technical Documentation
 
-**PowerCloud Team · v1.1 · Internal use only**
-**Last updated: 2026-04-14**
+**PowerCloud Team · v1.2 · Internal use only**
+**Last updated: 2026-04-20**
 
 ---
 
@@ -76,7 +76,7 @@ The solution is implemented entirely within **Azure Automation**. There are no c
 ```
 setup/
   _Helpers.ps1                  # Shared functions: auth, logging, state, pickers
-  Install-AutoShutdown.ps1      # Master orchestrator — runs all 6 setup steps
+  Install-AutoShutdown.ps1      # Master orchestrator — ToU prompt, version check, runs all 7 steps
   New-AutoShutdownInfra.ps1     # Step 1 — picks RG, creates Automation Account
   Set-ManagedIdentity.ps1       # Step 2 — enables System-assigned Managed Identity
   Set-RBACRoles.ps1             # Step 3 — assigns RBAC roles at subscription scope
@@ -96,6 +96,9 @@ runbook/
 docs/
   Technical-Documentation.md   # This document
   User-Guide.md                 # Guide for subscription owners
+  Terms-of-Use.md               # Terms of Use — acceptance required at install time
+
+version.txt                     # Current release version — read by Install-AutoShutdown.ps1
 ```
 
 State is persisted between setup steps via `setup/.autoshutdown-state.json`.
@@ -134,7 +137,11 @@ Run from the `setup/` folder:
 .\Install-AutoShutdown.ps1
 ```
 
-The orchestrator runs 6 steps in sequence. Each step saves state to `.autoshutdown-state.json` so a failed run can be resumed.
+On startup the script:
+1. Displays the Terms of Use URL and requires explicit `y` acceptance before proceeding.
+2. Checks the GitHub Releases API for a newer version. If one is found, offers to run `git pull` automatically (falls back to opening the GitHub URL if the folder is not a git clone).
+
+The orchestrator then runs 7 steps in sequence. Each step saves state to `.autoshutdown-state.json` so a failed run can be resumed.
 
 ### 6.2 Setup steps
 
@@ -403,4 +410,4 @@ Re-enable the same way. No tags or infrastructure need to change.
 
 ---
 
-*PowerCloud Team · VM Auto-shutdown & Auto-startup · Technical Documentation · v1.1*
+*PowerCloud Team · VM Auto-shutdown & Auto-startup · Technical Documentation · v1.2*

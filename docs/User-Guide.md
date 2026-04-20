@@ -1,7 +1,7 @@
 # VM Auto-shutdown & Auto-startup — User Guide for Subscription Owners
 
-**PowerCloud Team · v1.1 · Internal use only**
-**Last updated: 2026-04-14**
+**PowerCloud Team · v1.2 · Internal use only**
+**Last updated: 2026-04-20**
 
 ---
 
@@ -179,14 +179,18 @@ The PowerCloud Team has set up automatic failure alerts. If a scheduled shutdown
 
 ## Updating the solution (for administrators)
 
-When a new version is released, `Install-AutoShutdown.ps1` will display a warning at startup:
+When a new version is released, `Install-AutoShutdown.ps1` automatically detects it at startup and prompts:
 
 ```
-[!] Update available: v1.2  (you have v1.1)
-    To update: git pull  then re-run this script
+[!] Update available: v1.5  (you have v1.4.1)
+
+  Pull the latest version now and re-run? (y/n):
 ```
 
-**Update procedure:**
+- **y** — runs `git pull` automatically and exits. Re-run the script to continue with the updated version. If the folder was downloaded as a ZIP (not cloned via git), a warning is shown with the GitHub URL to download manually.
+- **n** — continues with the current version.
+
+**Manual update procedure:**
 
 1. Open a terminal in the repository folder
 2. Pull the latest changes:
@@ -208,4 +212,4 @@ For issues, tag changes, or schedule modifications, contact the **PowerCloud Tea
 
 ---
 
-*PowerCloud Team · VM Auto-shutdown & Auto-startup · User Guide · v1.1*
+*PowerCloud Team · VM Auto-shutdown & Auto-startup · User Guide · v1.2*
