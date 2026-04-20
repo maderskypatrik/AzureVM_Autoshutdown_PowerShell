@@ -142,6 +142,18 @@ Write-Host ""
 Write-Host "  Estimated time: 15-20 minutes (module import takes longest)" -ForegroundColor Gray
 Write-Host ""
 
+# -- Terms of Use --------------------------------------------------------------
+Write-Host "  By installing this solution you agree to the Terms of Use:" -ForegroundColor Gray
+Write-Host "  https://github.com/maderskypatrik/AzureVM_Autoshutdown_PowerShell/blob/main/docs/Terms-of-Use.md" -ForegroundColor Cyan
+Write-Host ""
+$tou = Read-Host "  Do you agree? (y/n)"
+if ($tou -notmatch '^[Yy]') {
+    Write-Host ""
+    Write-Host "  Setup cancelled. You must accept the Terms of Use to proceed." -ForegroundColor Yellow
+    exit 0
+}
+Write-Host ""
+
 Invoke-VersionCheck
 
 if ($StartFromStep -gt 1) {

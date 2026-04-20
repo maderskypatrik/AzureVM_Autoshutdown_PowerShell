@@ -1,7 +1,7 @@
 # VM Auto-shutdown & Auto-startup — Terms of Use
 
-**PowerCloud Team · v1.0 · Internal use only**
-**Last updated: 2026-04-14**
+**PowerCloud Team · v1.1 · Internal use only**
+**Last updated: 2026-04-20**
 
 ---
 
@@ -70,9 +70,14 @@ The PowerCloud Team accepts no responsibility for VMs that are incorrectly enrol
 
 ## 5. Acceptance
 
-Enrollment of a virtual machine into the Solution — by any means — constitutes acceptance of these Terms of Use by the subscription owner.
+Acceptance of these Terms of Use occurs in any of the following ways:
 
-If you do not agree with these terms, do not enroll your virtual machines. Contact the PowerCloud Team to discuss alternative arrangements.
+- **Installation via script:** Confirming acceptance when prompted by `Install-AutoShutdown.ps1` during setup.
+- **VM enrollment:** Adding the `shutdown` or `startup` tag to a virtual machine — directly in the Azure Portal or by any other means.
+
+In all cases, acceptance is on behalf of the subscription owner.
+
+If you do not agree with these terms, do not proceed with installation and do not enroll your virtual machines. Contact the PowerCloud Team to discuss alternative arrangements.
 
 ---
 
@@ -88,4 +93,4 @@ For questions regarding these Terms of Use, contact the **PowerCloud Team** thro
 
 ---
 
-*PowerCloud Team · VM Auto-shutdown & Auto-startup · Terms of Use · v1.0*
+*PowerCloud Team · VM Auto-shutdown & Auto-startup · Terms of Use · v1.1*
