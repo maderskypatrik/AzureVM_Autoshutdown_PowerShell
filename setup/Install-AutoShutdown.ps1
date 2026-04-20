@@ -85,7 +85,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-$ScriptVersion    = "v1.4"
+$ScriptVersion    = "v1.4.1"
 $GitHubRepoUrl    = "https://github.com/maderskypatrik/AzureVM_Autoshutdown_PowerShell"
 $GitHubReleasesUrl = "https://api.github.com/repos/maderskypatrik/AzureVM_Autoshutdown_PowerShell/releases/latest"
 
