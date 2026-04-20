@@ -85,36 +85,35 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\_Helpers.ps1"
 
-$VERSION = "v1.1"
+$ScriptVersion    = "v1.2"
+$GitHubRepoUrl    = "https://github.com/maderskypatrik/AzureVM_Autoshutdown_PowerShell"
+$GitHubReleasesUrl = "https://api.github.com/repos/maderskypatrik/AzureVM_Autoshutdown_PowerShell/releases/latest"
 
-function Test-LatestVersion {
-    param([string] $Current)
+# -- Version check -------------------------------------------------------------
+function Invoke-VersionCheck {
     try {
-        $response = Invoke-RestMethod `
-            -Uri        "https://api.github.com/repos/maderskypatrik/AzureVM_Autoshutdown_PowerShell/releases/latest" `
-            -TimeoutSec 5
-        $latest = $response.tag_name
-        if ($latest -and $latest -ne $Current) {
-            Write-Host "  [!] Update available: $latest  (you have $Current)" -ForegroundColor Yellow
+        $response = Invoke-RestMethod -Uri $GitHubReleasesUrl -TimeoutSec 5
+        $latest   = $response.tag_name
+
+        if ($latest -and $latest -ne $ScriptVersion) {
+            Write-Host "  [!] Update available: $latest  (you have $ScriptVersion)" -ForegroundColor Yellow
             Write-Host ""
-            $answer = Read-Host "  Pull latest version now and re-run? [Y/N]"
+            $answer = Read-Host "  Download the latest version from GitHub? (y/n)"
             if ($answer -match '^[Yy]') {
+                Start-Process $GitHubRepoUrl
                 Write-Host ""
-                Write-Host "  Running git pull..." -ForegroundColor Cyan
-                git -C $PSScriptRoot pull
-                Write-Host ""
-                Write-Host "  Please re-run the script to continue with the latest version." -ForegroundColor Cyan
+                Write-Host "  Opened GitHub in your browser. Re-download and re-run the script." -ForegroundColor Cyan
                 exit 0
-            } else {
-                Write-Host ""
-                Write-Host "  Continuing with $Current — you are responsible for any issues caused by running an outdated version." -ForegroundColor DarkYellow
             }
+            Write-Host ""
+            Write-Host "  Continuing with $ScriptVersion." -ForegroundColor DarkYellow
         } else {
-            Write-Host "  [OK] You are running the latest version: $Current" -ForegroundColor Green
+            Write-Host "  [OK] You are running the latest version: $ScriptVersion" -ForegroundColor Green
         }
         Write-Host ""
     } catch {
-        # Version check is non-critical — network errors are silently ignored
+        Write-Host "  [WARN] Version check failed (no internet or repo unreachable). Continuing..." -ForegroundColor Yellow
+        Write-Host ""
     }
 }
 
@@ -132,7 +131,7 @@ Write-Host ""
 Write-Host "  Estimated time: 15-20 minutes (module import takes longest)" -ForegroundColor Gray
 Write-Host ""
 
-Test-LatestVersion $VERSION
+Invoke-VersionCheck
 
 if ($StartFromStep -gt 1) {
     Write-Host "  Resuming from step $StartFromStep." -ForegroundColor Yellow
