@@ -213,10 +213,10 @@ function Invoke-AcceptanceCriteria {
         $name   = $CriteriaNames[$i]
         $result = & $Criteria[$i]
         if ($result) {
-            Write-Success "AC$($i+1) PASS | $name"
+            Write-Success $name
             $passed++
         } else {
-            Write-Fail   "AC$($i+1) FAIL | $name"
+            Write-Fail   $name
             $failed++
         }
     }
